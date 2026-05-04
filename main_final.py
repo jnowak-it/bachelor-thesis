@@ -58,22 +58,19 @@ kiara_young, young_labels = load_my_dataset(my_dog_young, 0)
 kiara_standard, standard_labels = load_my_dataset(my_dog_standard, 0)
 kiara_difficult, difficult_labels = load_my_dataset(my_dog_difficult, 0)
 
-similar_detailed = [1] * len(similar_dogs)
-normal_detailed = [2] * len(normal_dogs)
-different_detailed = [3] * len(different_dogs)
-standard_detailed = [10] * len(similar_dogs)
-young_detailed = [11] * len(similar_dogs)
-difficult_detailed = [12] * len(similar_dogs)
-
-stanford_detailed = similar_detailed + normal_detailed + different_detailed
-my_dog_detailed = standard_detailed + young_detailed + difficult_detailed
+similar_detailed = [1] * len(stanford_similar)
+normal_detailed = [2] * len(stanford_normal)
+different_detailed = [3] * len(stanford_different)
+standard_detailed = [10] * len(kiara_standard)
+young_detailed = [11] * len(kiara_young)
+difficult_detailed = [12] * len(kiara_difficult)
 
 X = stanford_different + stanford_normal + stanford_similar + kiara_young + kiara_standard + kiara_difficult
-y = different_labels + normal_labels + similar_labels + young_labels + difficult_labels + similar_labels
-y_detailed = similar_detailed + normal_detailed + different_detailed + standard_detailed + young_detailed + difficult_detailed
+y = different_labels + normal_labels + similar_labels + young_labels + standard_labels + difficult_labels
+y_detailed = different_detailed + normal_detailed + similar_detailed + young_detailed + standard_detailed + difficult_detailed
 
 X = np.array(X)
 y = np.array(y)
 y_detailed = np.array(y_detailed)
 
-print(X.shape, y.shape, y_detailed.shape)
+print(f"\nX size: {X.shape}\ny size: {y.shape}\ny_detailed size: {y_detailed.shape}")
