@@ -2,6 +2,7 @@ import os
 import cv2
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 print("--- LOADING DATA ---")
 
@@ -74,3 +75,19 @@ y = np.array(y)
 y_detailed = np.array(y_detailed)
 
 print(f"\nX size: {X.shape}\ny size: {y.shape}\ny_detailed size: {y_detailed.shape}")
+
+# --- DATA VISUALIZATION ---
+
+categories = [
+    ("Stanford Similar", stanford_similar),
+    ("Kiara Standard", kiara_standard),
+]
+plt.figure(figsize=(7, 4))
+plt.suptitle("Przykładowe zdjęcia po przetworzeniu")
+for i in range(len(categories)):
+    name, photo = categories[i]
+    for j in range(3):
+        plt.subplot(2, 3, i * 3 + j + 1)
+        plt.imshow(photo[j])
+plt.show()
+

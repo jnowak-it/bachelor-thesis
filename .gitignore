@@ -215,3 +215,10 @@ Archive/
 *.heic
 .DS_Store
 .idea/
+
+# Models
+*.keras
+
+#Notes
+CLAUDE.md
+notatki_nowy_kod.md
