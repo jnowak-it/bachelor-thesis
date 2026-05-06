@@ -3,6 +3,7 @@ import cv2
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 
 print("--- LOADING DATA ---")
 
@@ -90,4 +91,26 @@ for i in range(len(categories)):
         plt.subplot(2, 3, i * 3 + j + 1)
         plt.imshow(photo[j])
 plt.show()
+
+print("\n--- TRAIN / VAL / TEST DATA ---")
+
+# First split: trainval / test
+indices = np.arange(len(X))
+train_val_idx, test_idx = train_test_split(indices, test_size=0.15, random_state=42, stratify=y)
+X_train_val, X_test = X[train_val_idx], X[test_idx]
+y_train_val, y_test = y[train_val_idx], y[test_idx]
+y_train_val_detailed, y_test_detailed = y_detailed[train_val_idx], y_detailed[test_idx]
+
+# Second split: train / val
+indices_tv = np.arange(len(X_train_val))
+train_idx, val_idx = train_test_split(indices_tv, test_size=0.18, random_state=42, stratify=y_train_val)
+X_train, X_val = X_train_val[train_idx], X_train_val[val_idx]
+y_train, y_val = y_train_val[train_idx], y_train_val[val_idx]
+y_train_detailed, y_val_detailed = y_train_val_detailed[train_idx], y_train_val_detailed[val_idx]
+
+print(f"Train shape: {X_train.shape}, {y_train.shape}, {y_train_detailed.shape}")
+print(f"Val shape: {X_val.shape}, {y_val.shape}, {y_val_detailed.shape}")
+print(f"Test shape: {X_test.shape}, {y_test.shape}, {y_test_detailed.shape}")
+
+
 
