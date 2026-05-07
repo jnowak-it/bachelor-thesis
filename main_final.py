@@ -112,5 +112,25 @@ print(f"Train shape: {X_train.shape}, {y_train.shape}, {y_train_detailed.shape}"
 print(f"Val shape: {X_val.shape}, {y_val.shape}, {y_val_detailed.shape}")
 print(f"Test shape: {X_test.shape}, {y_test.shape}, {y_test_detailed.shape}")
 
+print("\n PAIRS FOR SIAMESE NEURAL NETWORK")
+
+def siamese_pairs(photos, labels):
+    pairs_1 = []
+    pairs_2 = []
+    pair_labels = []
+    my_dog_idx = np.where(labels == 0)[0]
+    stanford_idx = np.where(labels == 1)[0]
+    pairs = min(len(my_dog_idx), len(stanford_idx)) * 2
+    for random_dog in range(pairs):
+        rand_my_dog_idx = np.random.choice(my_dog_idx, 2, replace=False)
+        pairs_1.append(photos[rand_my_dog_idx[0]])
+        pairs_2.append(photos[rand_my_dog_idx[1]])
+        pair_labels.append(1)
+        rand_kiara_idx = np.random.choice(my_dog_idx, 1)[0]
+        rand_stanford_idx = np.random.choice(stanford_idx, 1)[0]
+        pairs_1.append(photos[rand_stanford_idx])
+        pairs_2.append(photos[rand_kiara_idx])
+        pair_labels.append(0)
+    return np.array(pairs_1), np.array(pairs_2), np.array(pair_labels)
 
 
