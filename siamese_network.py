@@ -4,6 +4,11 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import GlobalAveragePooling2D, Input, Dense, Dropout, BatchNormalization, Lambda
+from tensorflow.keras.applications import ResNet50
+import tensorflow.keras.backend as K
+np.random.seed(42)
 
 print("--- LOADING DATA ---")
 
@@ -26,6 +31,7 @@ def load_stanford_dataset(path, label):
                     img = cv2.imread(os.path.join(path, breed, photo))
                     if img is not None:
                         img = cv2.resize(img, (224, 224))
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         img = img / 255.0
                         photos.append(img)
                         labels.append(label)
@@ -45,6 +51,7 @@ def load_my_dataset(path, label):
             img = cv2.imread(os.path.join(path, photo))
             if img is not None:
                 img = cv2.resize(img, (224, 224))
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = img / 255.0
                 photos.append(img)
                 labels.append(label)
@@ -133,4 +140,43 @@ def siamese_pairs(photos, labels):
         pair_labels.append(0)
     return np.array(pairs_1), np.array(pairs_2), np.array(pair_labels)
 
+train_pairs_1, train_pairs_2, train_pair_labels = siamese_pairs(X_train, y_train)
+val_pairs_1, val_pairs_2, val_pair_labels = siamese_pairs(X_val, y_val)
 
+print(f"Train pairs: {len(train_pairs_1)}")
+print(f"Val pairs: {len(val_pairs_1)}")
+
+print(f"Kiara in train: {np.sum(y_train == 0)}")
+print(f"Stanford in train: {np.sum(y_train == 1)}")
+
+print("--- SIAMESE NEURAL NETWORK ARCHITECTURE ---")
+
+def base_network(input_shape=(224,224,3)):
+    input_tensor = Input(input_shape)
+    x = tf.keras.applications.resnet50.preprocess_input(input_tensor)
+    base_model = ResNet50(weights='imagenet', include_top=False)
+    for i, layer in enumerate(base_model.layers):
+        if i < len(base_model.layers) - 10:
+            layer.trainable = False
+    x = base_model(x)
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(256, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.5)(x)
+    model = Model(inputs=input_tensor, outputs=x)
+    return model
+
+def siamese_network(input_shape=(224,224,3)):
+    input_1 = Input(input_shape)
+    input_2 = Input(input_shape)
+    base = base_network(input_shape)
+    features_1 = base(input_1)
+    features_2 = base(input_2)
+    distance = Lambda(lambda tensors: K.abs(tensors[0] - tensors[1]))
+    l1_distance = distance([features_1, features_2])
+    output = Dense(1, activation='sigmoid')(l1_distance)
+    model = Model(inputs=[input_1, input_2], outputs=output)
+    return model
+
+model = siamese_network()
+model.summary()
