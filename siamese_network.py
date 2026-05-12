@@ -4,10 +4,14 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import GlobalAveragePooling2D, Input, Dense, Dropout, BatchNormalization, Lambda
 from tensorflow.keras.applications import ResNet50
 import tensorflow.keras.backend as K
+from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
 np.random.seed(42)
 
 print("--- LOADING DATA ---")
@@ -32,7 +36,6 @@ def load_stanford_dataset(path, label):
                     if img is not None:
                         img = cv2.resize(img, (224, 224))
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                        img = img / 255.0
                         photos.append(img)
                         labels.append(label)
                     else:
@@ -52,7 +55,6 @@ def load_my_dataset(path, label):
             if img is not None:
                 img = cv2.resize(img, (224, 224))
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                img = img / 255.0
                 photos.append(img)
                 labels.append(label)
             else:
@@ -180,3 +182,87 @@ def siamese_network(input_shape=(224,224,3)):
 
 model = siamese_network()
 model.summary()
+
+print("\n--- TRAINING THE SIAMESE NEURAL NETWORK ---")
+optimizer = Adam(learning_rate=1e-4)
+early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+history = model.fit([train_pairs_1, train_pairs_2], train_pair_labels, validation_data=([val_pairs_1, val_pairs_2], val_pair_labels), epochs=30, batch_size=32, callbacks=[early_stopping])
+model.save('siamese_network.keras')
+
+print("\n--- VALIDATION ---")
+kiara_train_idx = np.where(y_train == 0)[0]
+reference_idx = np.random.choice(kiara_train_idx, 5, replace=False)
+reference_images = X_train[reference_idx]
+
+predictions = []
+for i in range(len(X_test)):
+    scores = []
+    for ref_img in reference_images:
+        img_a = np.expand_dims(ref_img, 0)
+        img_b = np.expand_dims(X_test[i], 0)
+        similarity = model.predict([img_a, img_b], verbose=0)[0][0]
+        scores.append(similarity)
+    avg_score = np.mean(scores)
+    if avg_score > 0.5:
+        predictions.append(0)
+    else:
+        predictions.append(1)
+predictions = np.array(predictions)
+
+conf_matrix = confusion_matrix(y_test, predictions)
+print(conf_matrix)
+class_report = classification_report(y_test, predictions, target_names=['Kiara', 'Not Kiara'])
+print(class_report)
+
+groups = [
+    (10, 'Kiara Standard'),
+    (11, 'Kiara Young'),
+    (12, 'Kiara Difficult'),
+    (1, 'Similar'),
+    (2, 'Normal'),
+    (3, 'Different')
+]
+for value, name in groups:
+    idx = np.where(y_test_detailed == value)[0]
+    correct = np.sum(predictions[idx] == y_test[idx])
+    accuracy = correct / len(idx)
+    print(f"{name}: {accuracy*100:.2f}%")
+
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+plt.plot(acc, label='accuracy')
+plt.plot(val_acc, label='validation accuracy')
+plt.legend()
+plt.xlabel('epoch')
+plt.ylabel('accuracy')
+
+plt.subplot(1, 2, 2)
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+plt.plot(loss, label='loss')
+plt.plot(val_loss, label='validation loss')
+plt.legend()
+plt.xlabel('epoch')
+plt.ylabel('loss')
+plt.show()
+
+plt.figure(figsize=(6, 4))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Kiara', 'Nie Kiara'], yticklabels=['Kiara', 'Nie Kiara'])
+plt.xlabel('Predykcja')
+plt.ylabel('Prawda')
+plt.title('Macierz pomyłek')
+plt.show()
+
+wrong_idx = np.where(predictions != y_test)[0]
+print(f"Incorrect classifications: {len(wrong_idx)}")
+plt.figure(figsize=(12, 4))
+for i in range(len(wrong_idx)):
+    plt.subplot(1, len(wrong_idx), i + 1)
+    plt.imshow(X_test[wrong_idx[i]].astype(np.uint8))
+    pred_label = "Kiara" if predictions[wrong_idx[i]] == 0 else "Nie Kiara"
+    true_label = "Kiara" if y_test[wrong_idx[i]] == 0 else "Nie Kiara"
+    plt.title(f"Pred: {pred_label}\nTrue: {true_label}")
+plt.show()
