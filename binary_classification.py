@@ -1,6 +1,8 @@
 import os
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report, confusion_matrix
@@ -194,7 +196,7 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy',
 
 # Train only the top classification layers
 early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-model.fit(X_train, y_train, epochs=30, callbacks=[early_stopping], validation_data=(X_val, y_val), class_weight=class_weight)
+history_base = model.fit(X_train, y_train, epochs=30, callbacks=[early_stopping], validation_data=(X_val, y_val), class_weight=class_weight)
 model.save('model_base.keras')
 
 
@@ -212,7 +214,7 @@ adam_ft = Adam(learning_rate=1e-6, beta_1=0.9, beta_2=0.999)
 model.compile(optimizer=adam_ft, loss='binary_crossentropy', metrics=['accuracy', tf.keras.metrics.AUC(name='auc')])
 
 early_stopping_ft = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-model.fit(X_train, y_train, epochs=30, callbacks=[early_stopping_ft], validation_data=(X_val, y_val), class_weight=class_weight)
+history_ft = model.fit(X_train, y_train, epochs=30, callbacks=[early_stopping_ft], validation_data=(X_val, y_val), class_weight=class_weight)
 model.save('model_finetuned.keras')
 
 
@@ -244,3 +246,31 @@ print(f'Normal dogs correctly classified as "Other": {normal * 100:.2f}%')
 
 different = np.mean(model_predict_binary[y_det_test == 3] == 1)
 print(f'Different dogs correctly classified as "Other": {different * 100:.2f}%')
+
+# --- VISUALIZATION ---
+acc = history_base.history['accuracy'] + history_ft.history['accuracy']
+val_acc = history_base.history['val_accuracy'] + history_ft.history['val_accuracy']
+loss = history_base.history['loss'] + history_ft.history['loss']
+val_loss = history_base.history['val_loss'] + history_ft.history['val_loss']
+
+plt.figure(figsize=(14, 5))
+plt.subplot(1, 2, 1)
+plt.plot(acc, label='Train')
+plt.plot(val_acc, label='Validation')
+plt.axvline(x=len(history_base.history['accuracy']), color='r', linestyle='--', label='Fine-tuning')
+plt.title('Dokładnosć modelu')
+plt.xlabel('Epoka')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(loss, label='Train')
+plt.plot(val_loss, label='Validation')
+plt.axvline(x=len(history_base.history['loss']), color='r', linestyle='--', label='Fine-tuning')
+plt.title('Funkcja straty')
+plt.xlabel('Epoka')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.savefig('binary_training_curves.png')
+plt.show()
