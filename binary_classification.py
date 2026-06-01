@@ -2,7 +2,6 @@ import os
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report, confusion_matrix
@@ -273,4 +272,17 @@ plt.ylabel('Loss')
 plt.legend()
 
 plt.savefig('binary_training_curves.png')
+plt.show()
+
+wrong_idx = np.where(model_predict_binary != y_test)[0]
+print(f"Incorrect classifications: {len(wrong_idx)}")
+
+plt.figure(figsize=(12, 4))
+for i in range(len(wrong_idx)):
+    plt.subplot(1, len(wrong_idx), i + 1)
+    plt.imshow(X_test[wrong_idx[i]].astype(np.uint8))
+    pred_label = "Kiara" if model_predict_binary[wrong_idx[i]] == 0 else "Nie Kiara"
+    true_label = "Kiara" if y_test[wrong_idx[i]] == 0 else "Nie Kiara"
+    plt.title(f"Pred: {pred_label}\nTrue: {true_label}")
+plt.savefig('binary_wrong_classifications.png')
 plt.show()
