@@ -247,6 +247,7 @@ plt.plot(val_loss, label='validation loss')
 plt.legend()
 plt.xlabel('epoch')
 plt.ylabel('loss')
+plt.savefig('siamese_training_curves.jpg')
 plt.show()
 
 plt.figure(figsize=(6, 4))
@@ -254,6 +255,7 @@ sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Kiara'
 plt.xlabel('Predykcja')
 plt.ylabel('Prawda')
 plt.title('Macierz pomyłek')
+plt.savefig('siamese_confusion_matrix.jpg')
 plt.show()
 
 wrong_idx = np.where(predictions != y_test)[0]
@@ -265,4 +267,5 @@ for i in range(len(wrong_idx)):
     pred_label = "Kiara" if predictions[wrong_idx[i]] == 0 else "Nie Kiara"
     true_label = "Kiara" if y_test[wrong_idx[i]] == 0 else "Nie Kiara"
     plt.title(f"Pred: {pred_label}\nTrue: {true_label}")
+plt.savefig('siamese_test_prediction.jpg')
 plt.show()
